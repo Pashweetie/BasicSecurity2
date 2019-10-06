@@ -1,5 +1,5 @@
+import java.util.*;
 import java.io.*;
-
 import java.security.Key;
 import java.security.PublicKey;
 import java.security.PrivateKey;
@@ -15,6 +15,7 @@ import java.util.Scanner;
 import java.security.spec.RSAPrivateKeySpec;
 
 import java.math.BigInteger;
+import javax.crypto.SecretKey;
 
 import javax.crypto.Cipher;
 
@@ -49,10 +50,50 @@ public class RSA {
         privKSpec.getPrivateExponent());
     Scanner scannyboi = new Scanner(System.in);
     SecretKeySpec key  = new SecretKeySpec(scannyboi.nextLine().getBytes("UTF-8"),"AES");
-    // KeyFactory twobaby = 
-    System.out.println(key);
+    // SecretKey twobaby = SecretKey.getInstance("AES").key;
+    String encodedKey = Base64.getEncoder().encodeToString(key.getEncoded());
+    // System.out.println(encodedKey);
+    saveToFile("../symmetric.key", encodedKey);
+    readSymmetricKey(keyFileName)
+  }
+  public static PublicKey readSymmetricKey(String keyFileName) 
+      throws IOException {
 
+    InputStream in = 
+        RSAConfidentiality.class.getResourceAsStream(keyFileName);
+    ObjectInputStream oin =
+        new ObjectInputStream(new BufferedInputStream(in));
 
+    try {
+       m = (BigInteger) oin.readObject();
+
+      System.out.println("Read from " + keyFileName + ": modulus = " + 
+          m.toString() + ", exponent = " + e.toString() + "\n");
+
+      RSAPublicKeySpec keySpec = new RSAPublicKeySpec(m, e);
+      KeyFactory factory = KeyFactory.getInstance("RSA");
+      PublicKey key = factory.generatePublic(keySpec);
+
+      return key;
+    } catch (Exception e) {
+      throw new RuntimeException("Spurious serialisation error", e);
+    } finally {
+      oin.close();
+    }
+  public static void saveToFile(String fileName, String key) throws IOException{
+    
+
+    ObjectOutputStream oout = new ObjectOutputStream(
+      new BufferedOutputStream(new FileOutputStream(fileName)));
+
+    try {
+      oout.writeObject(key);
+    //   oout.writeObject(exp);
+    } catch (Exception e) {
+      throw new IOException("Unexpected error", e);
+    } finally {
+      oout.close();
+    }
   }
   public static void saveToFile(String fileName,
         BigInteger mod, BigInteger exp) throws IOException {

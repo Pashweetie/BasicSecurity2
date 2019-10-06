@@ -6,3 +6,6 @@ XPrivate.key
 XPublic.key
 YPrivate.key
 YPublic.key
+symmetric.key
+keyGen/RSAPrivate.key
+keyGen/RSAPublic.key
