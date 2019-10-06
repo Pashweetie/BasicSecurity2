@@ -54,7 +54,7 @@ public class RSA {
     String encodedKey = Base64.getEncoder().encodeToString(key.getEncoded());
     // System.out.println(encodedKey);
     saveToFile("../symmetric.key", encodedKey);
-    readSymmetricKey(keyFileName)
+    readSymmetricKey(keyFileName);
   }
   public static PublicKey readSymmetricKey(String keyFileName) 
       throws IOException {
@@ -80,6 +80,7 @@ public class RSA {
     } finally {
       oin.close();
     }
+  }
   public static void saveToFile(String fileName, String key) throws IOException{
     
 
