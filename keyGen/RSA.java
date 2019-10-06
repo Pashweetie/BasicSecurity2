@@ -21,12 +21,9 @@ import javax.crypto.Cipher;
 
 public class RSA {
   public static void main(String[] args) throws Exception {
-
-    byte[] input = "012340123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF".getBytes();
-    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-
-    //Generate a pair of keys
-    SecureRandom random = new SecureRandom();
+    String[] list = {"X","Y"};
+    for(String item:list){
+        SecureRandom random = new SecureRandom();
     KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
     generator.initialize(1024, random);  //1024: key size in bits
     KeyPair pair = generator.generateKeyPair();
@@ -40,14 +37,19 @@ public class RSA {
         RSAPrivateKeySpec.class);
 
     //save the parameters of the keys to the files
-    saveToFile("../XPublic.key", pubKSpec.getModulus(), 
+    saveToFile("../sender/"+item+"Public.key", pubKSpec.getModulus(), 
         pubKSpec.getPublicExponent());
-    saveToFile("../XPrivate.key", privKSpec.getModulus(), 
-        privKSpec.getPrivateExponent());
-    saveToFile("../YPublic.key", pubKSpec.getModulus(), 
+    saveToFile("../reciever/"+item+"Public.key", pubKSpec.getModulus(), 
         pubKSpec.getPublicExponent());
-    saveToFile("../YPrivate.key", privKSpec.getModulus(), 
+    saveToFile(""+item+"Public.key", pubKSpec.getModulus(), 
+        pubKSpec.getPublicExponent());
+    saveToFile("../sender/"+item+"Private.key", privKSpec.getModulus(), 
         privKSpec.getPrivateExponent());
+    saveToFile("../reciever/"+item+"Private.key", privKSpec.getModulus(), 
+        privKSpec.getPrivateExponent());
+    saveToFile(""+item+"Private.key", privKSpec.getModulus(), 
+        privKSpec.getPrivateExponent());
+    }
     Scanner scannyboi = new Scanner(System.in);
     SecretKeySpec key  = new SecretKeySpec(scannyboi.nextLine().getBytes("UTF-8"),"AES");
     // SecretKey twobaby = SecretKey.getInstance("AES").key;
@@ -110,56 +112,56 @@ public class RSA {
       oout.close();
     }
   }
-  public static PublicKey readPubKeyFromFile(String keyFileName) 
-      throws IOException {
+//   public static PublicKey readPubKeyFromFile(String keyFileName) 
+//       throws IOException {
 
-    InputStream in = 
-        RSAConfidentiality.class.getResourceAsStream(keyFileName);
-    ObjectInputStream oin =
-        new ObjectInputStream(new BufferedInputStream(in));
+//     InputStream in = 
+//         RSAConfidentiality.class.getResourceAsStream(keyFileName);
+//     ObjectInputStream oin =
+//         new ObjectInputStream(new BufferedInputStream(in));
 
-    try {
-      BigInteger m = (BigInteger) oin.readObject();
-      BigInteger e = (BigInteger) oin.readObject();
+//     try {
+//       BigInteger m = (BigInteger) oin.readObject();
+//       BigInteger e = (BigInteger) oin.readObject();
 
-      System.out.println("Read from " + keyFileName + ": modulus = " + 
-          m.toString() + ", exponent = " + e.toString() + "\n");
+//       System.out.println("Read from " + keyFileName + ": modulus = " + 
+//           m.toString() + ", exponent = " + e.toString() + "\n");
 
-      RSAPublicKeySpec keySpec = new RSAPublicKeySpec(m, e);
-      KeyFactory factory = KeyFactory.getInstance("RSA");
-      PublicKey key = factory.generatePublic(keySpec);
+//       RSAPublicKeySpec keySpec = new RSAPublicKeySpec(m, e);
+//       KeyFactory factory = KeyFactory.getInstance("RSA");
+//       PublicKey key = factory.generatePublic(keySpec);
 
-      return key;
-    } catch (Exception e) {
-      throw new RuntimeException("Spurious serialisation error", e);
-    } finally {
-      oin.close();
-    }
-  }
-  public static PrivateKey readPrivKeyFromFile(String keyFileName) 
-      throws IOException {
+//       return key;
+//     } catch (Exception e) {
+//       throw new RuntimeException("Spurious serialisation error", e);
+//     } finally {
+//       oin.close();
+//     }
+//   }
+//   public static PrivateKey readPrivKeyFromFile(String keyFileName) 
+//       throws IOException {
 
-    InputStream in = 
-        RSAConfidentiality.class.getResourceAsStream(keyFileName);
-    ObjectInputStream oin =
-        new ObjectInputStream(new BufferedInputStream(in));
+//     InputStream in = 
+//         RSAConfidentiality.class.getResourceAsStream(keyFileName);
+//     ObjectInputStream oin =
+//         new ObjectInputStream(new BufferedInputStream(in));
 
-    try {
-      BigInteger m = (BigInteger) oin.readObject();
-      BigInteger e = (BigInteger) oin.readObject();
+//     try {
+//       BigInteger m = (BigInteger) oin.readObject();
+//       BigInteger e = (BigInteger) oin.readObject();
 
-      System.out.println("Read from " + keyFileName + ": modulus = " + 
-          m.toString() + ", exponent = " + e.toString() + "\n");
+//       System.out.println("Read from " + keyFileName + ": modulus = " + 
+//           m.toString() + ", exponent = " + e.toString() + "\n");
 
-      RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(m, e);
-      KeyFactory factory = KeyFactory.getInstance("RSA");
-      PrivateKey key = factory.generatePrivate(keySpec);
+//       RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(m, e);
+//       KeyFactory factory = KeyFactory.getInstance("RSA");
+//       PrivateKey key = factory.generatePrivate(keySpec);
 
-      return key;
-    } catch (Exception e) {
-      throw new RuntimeException("Spurious serialisation error", e);
-    } finally {
-      oin.close();
-    }
-  }
+//       return key;
+//     } catch (Exception e) {
+//       throw new RuntimeException("Spurious serialisation error", e);
+//     } finally {
+//       oin.close();
+//     }
+//   }
 }
