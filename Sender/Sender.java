@@ -1,129 +1,93 @@
-import java.security.MessageDigest;
-import java.security.PublicKey;
-import java.util.Scanner;
-import java.security.Key;
-import java.security.KeyFactory;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.FileInputStream;
-import java.io.ObjectInputStream;
-import java.security.DigestInputStream;
-import java.io.ObjectOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigInteger;
-import javax.crypto.SecretKey;
-import java.security.SecureRandom;
-import javax.crypto.Cipher;
-import java.security.Key;
-import java.security.PublicKey;
-import java.security.PrivateKey;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.SecureRandom;
-import java.security.Security;
-import javax.crypto.spec.SecretKeySpec;
-import java.util.*;
-import java.io.*;
+import java.security.DigestInputStream;
 import java.security.KeyFactory;
+import java.security.MessageDigest;
+import java.security.PublicKey;
 import java.security.spec.RSAPublicKeySpec;
+import java.util.Base64;
 import java.util.Scanner;
-import java.security.spec.RSAPrivateKeySpec;
-import java.math.BigInteger;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
+
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
 
 public class Sender {
   private static int BUFFER_SIZE = 5 * 1024;
-  private static String IV = "AAAAAAAAAAAAAAAA";
-  public static void main(String[] args){
+
+  private static SecretKeySpec AESKey() throws IOException {
+    ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream("../symmetric.key")));
+    SecretKeySpec key;
     try {
-      sendMessage();
+      key = (SecretKeySpec) in.readObject();
     } catch (Exception e) {
-      System.out.println(e);
-    }
-  }
-  public static void sendMessage() throws Exception {
-    Scanner in = new Scanner(System.in);
-    System.out.println("Input the name of the massage file: ");
-    String key = "";
-    PublicKey Ky;
-    try {
-      key = readSymmetricKey("../symmetric.key");
-      Ky = readPubKeyFromFile("YPublic.key");
-    } catch (IOException e) {
-      throw e;
-    }
-    String file = in.nextLine();
-    try{
-      concate(file, key);
-    } catch (IOException e) {
-      System.out.println(e);
-      in.close();
-      throw new Exception("borked");
-    }
-    try {
-      genHash();
-      writeAES(key, file);
-      writeRSA(key, Ky);
-    } catch (Exception e) {
-      System.out.println(e);
-      in.close();
-      throw e;
-    }
-    in.close();
-  }
-
-  public static String readSymmetricKey(String keyFileName) throws IOException {
-    InputStream inputStream = new FileInputStream(keyFileName);
-    ObjectInputStream oin =
-        new ObjectInputStream(new BufferedInputStream(inputStream));
-
-    try {
-       String key = oin.readObject().toString();
-
-      System.out.println("Read from " + keyFileName + ": modulus = " + key.toString() );
-
-    //   RSAPublicKeySpec keySpec = new RSAPublicKeySpec(m, e);
-    //   KeyFactory factory = KeyFactory.getInstance("RSA");
-    //   PublicKey key = factory.generatePublic(keySpec);
-
-      return key;
-    } catch (Exception e) {
-      throw new RuntimeException("Spurious serialisation error", e);
+      throw new IOException("Failed to read AES key file", e);
     } finally {
-      oin.close();
+      in.close();
     }
+    return key;
   }
 
-  private static void concate(String f, String key) throws IOException {
-    BufferedReader rfile = new BufferedReader(new FileReader(f));
+  private static PublicKey RSAKey() throws IOException {
+    ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream("YPublic.key")));
+    PublicKey key;
+    try {
+      BigInteger modulus = (BigInteger) in.readObject();
+      BigInteger exponent = (BigInteger) in.readObject();
+      RSAPublicKeySpec publicSpec = new RSAPublicKeySpec(modulus, exponent);
+      KeyFactory factory = KeyFactory.getInstance("RSA");
+      key = factory.generatePublic(publicSpec);
+    } catch (Exception e) {
+      throw new IOException("Failed to read RSA key from file", e);
+    } finally {
+      in.close();
+    }
+    return key;
+  }
+
+  private static void writeKMK(SecretKeySpec Kxy, String fileName) throws IOException {
+    File file = new File(fileName);
+    byte[] bfile = new byte[(int) file.length()];
+    FileInputStream inStream = new FileInputStream(fileName);
     BufferedWriter wfile = new BufferedWriter(new FileWriter("message.kmk"));
     try {
-      String message = "";
-      String line;
-      while((line = rfile.readLine()) != null) {
-        message += line.toString();
+      String eKxy = Base64.getEncoder().encodeToString(Kxy.getEncoded());
+      wfile.write(eKxy);
+      inStream.read(bfile);
+      int extra = bfile.length % 16;
+      for (int i = 0; i < bfile.length + extra; i+=16) {
+        byte[] slice = new byte[16];
+        for (int j = 0; j < 16; j++) {
+          if (i+j < bfile.length) {
+            slice[j] = bfile[i+j];
+          }
+        }
+        wfile.write(new String(slice, "UTF-8"));
       }
-      String kmk = key + message + key;
-      wfile.write(kmk);
+      wfile.write(eKxy);
     } catch (Exception e) {
-      throw new IOException("Unexpected error", e);
+      throw new IOException("Failed to write kmk", e);
     } finally {
-      rfile.close();
       wfile.close();
+      inStream.close();
     }
   }
 
-  private static void genHash() throws Exception {
+  private static void writeHash() throws Exception { 
     BufferedInputStream file = new BufferedInputStream(new FileInputStream("message.kmk"));
-    BufferedWriter wfile = new BufferedWriter(new FileWriter("message.khmac"));
+    ObjectOutputStream wfile = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("message.khmac")));
     MessageDigest md = MessageDigest.getInstance("SHA-256");
     DigestInputStream in = new DigestInputStream(file, md);
     int i;
@@ -136,123 +100,81 @@ public class Sender {
 
     byte[] hash = md.digest();
     System.out.println("hash value:");
+    wfile.writeInt(hash.length);
+    wfile.write(hash);
     for (int k=0, j=0; k<hash.length; k++, j++) {
-      System.out.format("%2X ", new Byte(hash[k]));
+      System.out.format("%2X ", Byte.valueOf(hash[k]));
       if (j >= 15) {
         System.out.println("");
         j=-1;
       }
     }
     System.out.println("");
-    String xhash = "";
-    for (i=0; i < hash.length; i++) {
-      int x = (int)hash[i];
-      String y = Integer.toHexString(x);
-      if(y.length() == 1) {
-        y = "0"+y;
-      }
-      y = (y.substring(y.length()-2, y.length()));
-      xhash += y;
-    }
-    wfile.write(xhash);
+
     file.close();
     wfile.close();
   }
 
-  public static PublicKey readPubKeyFromFile(String keyFileName) 
-      throws IOException {
-
-    InputStream in = 
-        Sender.class.getResourceAsStream(keyFileName);
-    ObjectInputStream oin =
-        new ObjectInputStream(new BufferedInputStream(in));
-
+  private static void AESEncrypt(String fileName, SecretKeySpec Kxy) throws Exception {
+    File file = new File(fileName);
+    FileOutputStream wfile = new FileOutputStream("message.aescipher");
+    FileInputStream inStream = new FileInputStream(file);
+    byte[] bfile = new byte[(int) file.length()];
     try {
-      BigInteger m = (BigInteger) oin.readObject();
-      BigInteger e = (BigInteger) oin.readObject();
-
-      System.out.println("Read from " + keyFileName + ": modulus = " + 
-          m.toString() + ", exponent = " + e.toString() + "\n");
-
-      RSAPublicKeySpec keySpec = new RSAPublicKeySpec(m, e);
-      KeyFactory factory = KeyFactory.getInstance("RSA");
-      PublicKey key = factory.generatePublic(keySpec);
-
-      return key;
-    } catch (Exception e) {
-      throw new RuntimeException("Spurious serialisation error", e);
-    } finally {
-      oin.close();
-    }
-  }
-
-  private static SecretKeySpec keyxy;
-  private static byte[] keybyte;
-  public static void setKey(String myKey)
-  {
-    MessageDigest sha = null;
-    try {
-        keybyte = myKey.getBytes("UTF-8");
-        sha = MessageDigest.getInstance("SHA-1");
-        keybyte = sha.digest(keybyte);
-        keybyte = Arrays.copyOf(keybyte, 16);
-        keyxy = new SecretKeySpec(keybyte, "AES");
-    }
-    catch (Exception e) {
-        e.printStackTrace();
-    }
-  }
-
-  private static void writeAES(String kxy, String f) throws Exception {
-    BufferedReader rfile = new BufferedReader(new FileReader(f));
-    ObjectOutputStream wfile = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("message.aescipher")));
-    String message = "";
-    try {
-      String line;
-      while((line = rfile.readLine()) != null) {
-        message += line.toString();
+      inStream.read(bfile);
+      int extra = bfile.length % 16;
+      for (int i = 0; i < bfile.length + extra; i+=16) {
+        byte[] slice = new byte[16];
+        for (int j = 0; j < 16; j++) {
+          if (i+j < bfile.length) {
+            slice[j] = bfile[i+j];
+          }
+        }
+        Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, Kxy);
+        wfile.write(cipher.doFinal(slice));
       }
     } catch (Exception e) {
-      wfile.close();
-      throw e;
-    } finally {
-      rfile.close();
-    }
-    
-    try {
-      setKey(kxy);
-      Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-      cipher.init(Cipher.ENCRYPT_MODE, keyxy);
-      wfile.writeObject(cipher.doFinal(message.getBytes("UTF-8")));
-    } catch (Exception e) {
-      System.out.println("Error while encrypting: " + e.toString());
+      throw new IOException("Failed to perform AES Encryption", e);
     } finally {
       wfile.close();
+      inStream.close();
     }
   }
 
-  private static void writeRSA(String kxy, PublicKey ky) throws Exception{
-    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+  private static void RSAEncrypt(PublicKey Ky, SecretKeySpec Kxy) throws IOException {
     ObjectOutputStream wfile = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("xky.rsacipher")));
-    cipher.init(Cipher.ENCRYPT_MODE, ky, new SecureRandom());
-    byte[] cipherText = cipher.doFinal(stringtobyte(kxy));
     try {
-      wfile.writeObject(cipherText);
+      Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+      cipher.init(Cipher.ENCRYPT_MODE, Ky);
+      byte[] eKxy = cipher.doFinal(Kxy.getEncoded());
+      wfile.write(eKxy.length);
+      wfile.write(eKxy);
     } catch (Exception e) {
-      throw e;
+      throw new IOException("Failed to perform RSA Encryption", e);
     } finally {
       wfile.close();
     }
   }
 
-  public static byte[] stringtobyte(String s) {
-    int len = s.length();
-    byte[] data = new byte[len / 2];
-    for (int i = 0; i < len; i += 2) {
-        data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                             + Character.digit(s.charAt(i+1), 16));
-    }
-    return data;
-  }
+  public static void main(String[] args) {
+    SecretKeySpec Kxy;
+    PublicKey Ky;
+    Scanner in = new Scanner(System.in);
+    System.out.println("Enter the name of the message file: ");
+    String fileName = in.nextLine();
+    in.close();
 
+    try {
+      Kxy = AESKey();
+      Ky = RSAKey();
+      writeKMK(Kxy, fileName);
+      writeHash();
+      AESEncrypt(fileName, Kxy);
+      RSAEncrypt(Ky, Kxy);
+    } catch (Exception e) {
+      System.err.println(e);
+      return;
+    }
+  }
 }
