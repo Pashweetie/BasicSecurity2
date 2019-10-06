@@ -54,25 +54,21 @@ public class RSA {
     String encodedKey = Base64.getEncoder().encodeToString(key.getEncoded());
     // System.out.println(encodedKey);
     saveToFile("../symmetric.key", encodedKey);
-    readSymmetricKey(keyFileName);
+    readSymmetricKey("../symmetric.key");
   }
-  public static PublicKey readSymmetricKey(String keyFileName) 
-      throws IOException {
-
-    InputStream in = 
-        RSAConfidentiality.class.getResourceAsStream(keyFileName);
+  public static String readSymmetricKey(String keyFileName) throws IOException {
+    InputStream inputStream = new FileInputStream(keyFileName);
     ObjectInputStream oin =
-        new ObjectInputStream(new BufferedInputStream(in));
+        new ObjectInputStream(new BufferedInputStream(inputStream));
 
     try {
-       m = (BigInteger) oin.readObject();
+       String key = oin.readObject().toString();
 
-      System.out.println("Read from " + keyFileName + ": modulus = " + 
-          m.toString() + ", exponent = " + e.toString() + "\n");
+      System.out.println("Read from " + keyFileName + ": modulus = " + key.toString() );
 
-      RSAPublicKeySpec keySpec = new RSAPublicKeySpec(m, e);
-      KeyFactory factory = KeyFactory.getInstance("RSA");
-      PublicKey key = factory.generatePublic(keySpec);
+    //   RSAPublicKeySpec keySpec = new RSAPublicKeySpec(m, e);
+    //   KeyFactory factory = KeyFactory.getInstance("RSA");
+    //   PublicKey key = factory.generatePublic(keySpec);
 
       return key;
     } catch (Exception e) {
