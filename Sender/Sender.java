@@ -28,7 +28,7 @@ public class Sender {
   private static int BUFFER_SIZE = 5 * 1024;
 
   private static SecretKeySpec AESKey() throws IOException {
-    ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream("../symmetric.key")));
+    ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream("symmetric.key")));
     SecretKeySpec key;
     try {
       key = (SecretKeySpec) in.readObject();

@@ -19,7 +19,7 @@ import javax.crypto.SecretKey;
 
 import javax.crypto.Cipher;
 
-public class RSA {
+public class KeyGen {
   public static void main(String[] args) throws Exception {
     String[] list = {"X","Y"};
     for(String item:list){
@@ -38,14 +38,14 @@ public class RSA {
 
       //save the parameters of the keys to the files
       if(item.equals("X")){
-        saveToFile("../sender/"+item+"Private.key", privKSpec.getModulus(), 
+        saveToFile("../Sender/"+item+"Private.key", privKSpec.getModulus(), 
           privKSpec.getPrivateExponent());
-        saveToFile("../receiver/"+item+"Public.key", pubKSpec.getModulus(), 
+        saveToFile("../Receiver/"+item+"Public.key", pubKSpec.getModulus(), 
           pubKSpec.getPublicExponent());
       } else {
-        saveToFile("../sender/"+item+"Public.key", pubKSpec.getModulus(), 
+        saveToFile("../Sender/"+item+"Public.key", pubKSpec.getModulus(), 
           pubKSpec.getPublicExponent());
-        saveToFile("../receiver/"+item+"Private.key", privKSpec.getModulus(), 
+        saveToFile("../Receiver/"+item+"Private.key", privKSpec.getModulus(), 
           privKSpec.getPrivateExponent());
       }
       saveToFile(""+item+"Public.key", pubKSpec.getModulus(), 
@@ -56,7 +56,7 @@ public class RSA {
     System.out.println("Enter a character message: ");
     Scanner scannyboi = new Scanner(System.in);
     SecretKeySpec key  = new SecretKeySpec(scannyboi.nextLine().getBytes("UTF-8"),"AES");
-    saveToFile("../symmetric.key", key);
+    saveToFile("symmetric.key", key);
     scannyboi.close();
   }
 

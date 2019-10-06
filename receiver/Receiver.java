@@ -43,7 +43,7 @@ public class Receiver {
 
   private static SecretKeySpec RSADecrypt(PrivateKey Ky) throws IOException {
     ObjectOutputStream wfile = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("message.kmk")));
-    ObjectInputStream rfile = new ObjectInputStream(new BufferedInputStream(new FileInputStream("../sender/xky.rsacipher")));
+    ObjectInputStream rfile = new ObjectInputStream(new BufferedInputStream(new FileInputStream("xky.rsacipher")));
     SecretKeySpec Kxy;
     try {
       int len = rfile.read();
@@ -73,8 +73,8 @@ public class Receiver {
   }
 
   private static void decryptM(SecretKeySpec Kxy, String fileName) throws Exception{
-    File file = new File("../sender/message.aescipher");
-    FileInputStream inStream = new FileInputStream("../sender/message.aescipher");
+    File file = new File("message.aescipher");
+    FileInputStream inStream = new FileInputStream("message.aescipher");
     FileOutputStream wStream = new FileOutputStream(fileName);
     BufferedWriter wfile = new BufferedWriter(new FileWriter("message.kmk"));
     byte[] bfile = new byte[(int) file.length()];
@@ -111,7 +111,7 @@ public class Receiver {
 
   private static void verifyHash() throws Exception { 
     BufferedInputStream file = new BufferedInputStream(new FileInputStream("message.kmk"));
-    ObjectInputStream rfile = new ObjectInputStream(new BufferedInputStream(new FileInputStream("../sender/message.khmac")));
+    ObjectInputStream rfile = new ObjectInputStream(new BufferedInputStream(new FileInputStream("message.khmac")));
     MessageDigest md = MessageDigest.getInstance("SHA-256");
     DigestInputStream in = new DigestInputStream(file, md);
     int i;

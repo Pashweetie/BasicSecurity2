@@ -16,3 +16,10 @@ sender/message.kmk
 sender/message.khmac
 sender/message.aescipher
 .vscode
+Receiver/message.aescipher
+Receiver/message.khmac
+Receiver/message.kmk
+Receiver/output.pdf
+Receiver/xky.rsacipher
+Sender/Idk Fam.pdf
+Sender/ResumeStart.pdf
